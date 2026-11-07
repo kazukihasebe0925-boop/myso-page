@@ -164,10 +164,14 @@ function show(){
   $("preview").innerHTML=render(data);
   $("editor").classList.remove("hide");
   $("e_points").value=(data.points||[]).join("\n"); $("e_staff").value=data.staff||""; $("e_phone").value=data.phone||"";
+  hint();
+}
+function hint(){
   const hit=(data.points||[]).join(" ").match(new RegExp(BANNED.join("|"),"g"));
   $("checkbox_hint").textContent = hit ? `注意：「${[...new Set(hit)].join("」「")}」はマイソクに根拠がない言葉です。消してください` : "送る前に「おすすめポイント」がマイソクに書いてあることだけか確かめる";
+  $("checkbox_hint").style.background = hit ? "#f8d7da" : "#fff3cd"; $("checkbox_hint").style.color = hit ? "#842029" : "#7a5a00";
 }
-for(const id of ["e_points","e_staff","e_phone"]) $(id).addEventListener("input",()=>{ if(!data)return; data.points=$("e_points").value.split("\n").map(s=>s.trim()).filter(Boolean); data.staff=$("e_staff").value; data.phone=$("e_phone").value; $("preview").innerHTML=render(data); });
+for(const id of ["e_points","e_staff","e_phone"]) $(id).addEventListener("input",()=>{ if(!data)return; data.points=$("e_points").value.split("\n").map(s=>s.trim()).filter(Boolean); data.staff=$("e_staff").value; data.phone=$("e_phone").value; $("preview").innerHTML=render(data); hint(); });
 $("sample").onclick=()=>{ data=JSON.parse(JSON.stringify(window.SAMPLE)); show(); $("status").textContent="サンプルを表示しました"; };
 $("copy").onclick=async()=>{ if(!data){$("err").textContent="先にページを作ってください";return;} const u=shareUrl(); try{await navigator.clipboard.writeText(u);$("status").textContent=`リンクをコピーしました（${Math.round(u.length/1024)}KB）`;}catch(e){prompt("このリンクをコピーしてください",u);} };
 $("copyshort").onclick=async()=>{ if(!data){$("err").textContent="先にページを作ってください";return;} const u=shareUrl(true); try{await navigator.clipboard.writeText(u);$("status").textContent=`短いリンクをコピーしました（${Math.round(u.length/1024)}KB）`;}catch(e){prompt("このリンクをコピーしてください",u);} };
