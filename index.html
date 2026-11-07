@@ -19,7 +19,7 @@ main{max-width:980px;margin:0 auto;padding:16px}
 .card h2{font-size:15px;margin:0 0 10px}
 .step{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
 .num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px}
-.drop{border:2px dashed #b9c4be;border-radius:10px;padding:18px;text-align:center;color:var(--sub);cursor:pointer}
+.drop{display:block;border:2px dashed #b9c4be;border-radius:10px;padding:18px;text-align:center;color:var(--sub);cursor:pointer}
 .drop.on{border-color:var(--accent);color:var(--accent)}
 input[type=file]{display:none}
 input[type=password],input[type=text],textarea{width:100%;font-size:15px;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit}
@@ -90,7 +90,7 @@ table.spec td{padding:7px 6px;border-bottom:1px solid var(--line)}
       <div class="row" style="margin-top:10px"><button class="ghost" id="sample">サンプル（錦糸町）で試す</button></div>
     </div>
     <div class="card edit hide" id="editor" style="margin-top:12px">
-      <h2>直す（ここを書き換えると右のページも変わる）</h2>
+      <h2>直す（書き換えると見本も変わる）</h2>
       <label>おすすめポイント（1行1つ）</label><textarea id="e_points"></textarea>
       <label>担当者名</label><input type="text" id="e_staff">
       <label>電話番号</label><input type="text" id="e_phone">
@@ -112,23 +112,24 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 
 const $ = id => document.getElementById(id);
 const BANNED = ["最高","絶対","完璧","日当たり良好","日当たりの良い","陽当たり","閑静","人気","お得","掘り出し","格安","破格","理想","快適","充実","魅力","安心","便利","豊か","至近","おすすめ"];
-const MODEL = "gemini-2.5-flash";
+const MODELS = ["gemini-2.5-flash","gemini-flash-latest","gemini-2.0-flash"];
 let data = null;        // 現在のページデータ
 let pageCanvas = null;  // マイソクを描いたcanvas（切り抜き用）
 
 // ---------- 表示（作成側・閲覧側で共通） ----------
+function safeImg(u){return (typeof u==="string"&&u.startsWith("data:image/"))?u:""}
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function render(d){
-  const photos=(d.photos||[]).slice(0,3);
+  const photos=(d.photos||[]).slice(0,3).map(safeImg).filter(Boolean);
   const specs=[["所在地",d.address],["交通",(d.access||[]).join("\n")],["間取り",d.layout],["面積",d.area],["階",d.floor],["築年月",d.built],["構造",d.structure],["総戸数",d.units],["管理費等",d.mgmt_fee],["権利",d.rights],["管理",d.management],["設備",(d.facilities||[]).join("、")],["現況",d.status],["引渡し",d.delivery],["取引態様",d.transaction]].filter(r=>r[1]);
   return `<div class="phone">
     <div class="hero"><span class="kind">${esc(d.kind||"物件")}</span><h3>${esc(d.name)}</h3>
       <div class="price"><div class="l">価格</div><div class="v">${esc(d.price)}</div></div></div>
     ${photos.length?`<div class="photos">${photos.map(p=>`<img src="${p}" alt="">`).join("")}</div>`:""}
     <section class="p"><h4>ポイント</h4>${(d.points||[]).map((t,i)=>`<div class="pt"><div class="n">${i+1}</div><div class="t">${esc(t)}</div></div>`).join("")}</section>
-    ${d.floorplan?`<section class="p fp"><h4>間取り</h4><img src="${d.floorplan}" alt="間取り図"></section>`:""}
+    ${safeImg(d.floorplan)?`<section class="p fp"><h4>間取り</h4><img src="${safeImg(d.floorplan)}" alt="間取り図"></section>`:""}
     <section class="p"><h4>物件概要</h4><table class="spec">${specs.map(r=>`<tr><th>${esc(r[0])}</th><td>${esc(r[1]).replace(/\n/g,"<br>")}</td></tr>`).join("")}</table></section>
-    ${d.map?`<section class="p fp"><h4>地図</h4><img src="${d.map}" alt="地図"></section>`:""}
+    ${safeImg(d.map)?`<section class="p fp"><h4>地図</h4><img src="${safeImg(d.map)}" alt="地図"></section>`:""}
     <section class="p"><div class="contact"><b>${esc(d.company||"")}</b>${esc(d.license||"")}<br>担当：${esc(d.staff||"")}
       ${d.phone?`<br><a href="tel:${esc(d.phone)}">電話で問い合わせる ${esc(d.phone)}</a>`:""}</div></section>
     <div class="foot">図面と現況が異なる場合は現況を優先します。掲載内容はマイソクの記載に基づきます。</div>
@@ -214,10 +215,15 @@ const PROMPT=`これは不動産のマイソク（物件概要の図面）です
 async function callGemini(key,jpegDataUrl){
   const body={contents:[{parts:[{text:PROMPT},{inline_data:{mime_type:"image/jpeg",data:jpegDataUrl.split(",")[1]}}]}],
     generationConfig:{responseMimeType:"application/json",responseSchema:SCHEMA,temperature:0.1}};
-  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  if(!r.ok){throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0,300)}`);}
-  const j=await r.json(); const t=j.candidates?.[0]?.content?.parts?.map(p=>p.text).join("")||"";
-  return JSON.parse(t);
+  let last="";
+  for(const m of MODELS){
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(r.status===404){last=`モデル ${m} が見つかりません`; continue;}
+    if(!r.ok){throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0,300)}`);}
+    const j=await r.json(); const t=j.candidates?.[0]?.content?.parts?.map(p=>p.text).join("")||"";
+    return JSON.parse(t);
+  }
+  throw new Error(last);
 }
 $("go").onclick=async()=>{
   $("err").textContent="";
@@ -229,8 +235,8 @@ $("go").onclick=async()=>{
     const out=await callGemini(key,jpeg);
     out.photos=(out.photo_boxes||[]).map(b=>crop(b,640)).filter(Boolean);
     out.floorplan=crop(out.floorplan_box,480); out.map=crop(out.map_box,640);
-    out.points=(out.points||[]).map(p=>BANNED.reduce((s,w)=>s.replace(new RegExp(w,"g"),""),p)).map(s=>s.trim()).filter(Boolean);
-    data=out; show(); $("status").textContent="できました。右のページを確認して、リンクをコピーしてください";
+    out.points=(out.points||[]).map(s=>String(s).trim()).filter(Boolean).slice(0,3);
+    data=out; show(); $("status").textContent="できました。見本を確認して、リンクをコピーしてください";
   }catch(e){ $("status").textContent=""; $("err").textContent="うまくいきませんでした。もう一度押すか、長谷部に画面の写真を送ってください。\n"+e.message; console.error(e); }
 };
 </script>
