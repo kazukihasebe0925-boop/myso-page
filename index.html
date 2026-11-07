@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>物件ページ作成（試作）</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--ink:#1f2a24;--sub:#5f6b65;--line:#dfe3e0;--accent:#1f5f8b;--bg:#f6f7f6;--paper:#fff;--warn:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--paper);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:12px}
+header h1{font-size:16px;margin:0}
+header .tag{font-size:11px;color:var(--sub);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+main{max-width:980px;margin:0 auto;padding:16px}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:860px){.grid{grid-template-columns:420px 1fr}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{font-size:15px;margin:0 0 10px}
+.step{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
+.num{flex:none;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:13px}
+.drop{border:2px dashed #b9c4be;border-radius:10px;padding:18px;text-align:center;color:var(--sub);cursor:pointer}
+.drop.on{border-color:var(--accent);color:var(--accent)}
+input[type=file]{display:none}
+input[type=password],input[type=text],textarea{width:100%;font-size:15px;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit}
+textarea{min-height:64px}
+button{font-size:15px;padding:12px 16px;border-radius:10px;border:0;cursor:pointer;font-family:inherit}
+.primary{background:var(--accent);color:#fff;width:100%;font-weight:700}
+.ghost{background:#eef2f0;color:var(--ink)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row button{flex:1}
+.hint{font-size:12px;color:var(--sub);margin-top:6px}
+.err{color:var(--warn);font-size:13px;margin-top:8px;white-space:pre-wrap}
+.status{font-size:13px;color:var(--accent);margin-top:8px}
+/* preview phone */
+.phone{max-width:420px;margin:0 auto;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#fff}
+.hero{background:linear-gradient(160deg,#0f2740,#1b3f66);color:#fff;padding:18px 16px}
+.hero .kind{display:inline-block;font-size:11px;border:1px solid rgba(255,255,255,.5);border-radius:999px;padding:2px 8px}
+.hero h3{margin:8px 0 10px;font-size:20px;line-height:1.3}
+.price{background:rgba(255,255,255,.1);border-radius:10px;padding:10px 12px}
+.price .v{font-size:28px;font-weight:800;color:#8ad1ff}
+.price .l{font-size:11px;opacity:.85}
+.photos{display:grid;grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;gap:4px;height:230px}
+.photos img{width:100%;height:100%;object-fit:cover;display:block}
+.photos img:first-child{grid-row:1/3}
+section.p{padding:14px 16px;border-top:1px solid var(--line)}
+section.p h4{margin:0 0 8px;font-size:14px;color:var(--accent)}
+.pt{display:flex;gap:10px;margin:8px 0;align-items:flex-start}
+.pt .n{flex:none;width:22px;height:22px;border-radius:6px;background:#e8f1f8;color:var(--accent);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.pt .t{font-size:14px;line-height:1.5}
+table.spec{width:100%;border-collapse:collapse;font-size:13px}
+table.spec th{text-align:left;color:var(--sub);font-weight:500;width:34%;padding:7px 6px;border-bottom:1px solid var(--line);background:#fafbfa}
+table.spec td{padding:7px 6px;border-bottom:1px solid var(--line)}
+.fp img{width:100%;border:1px solid var(--line);border-radius:8px}
+.contact{background:#f3f6f4;border-radius:10px;padding:12px;font-size:14px}
+.contact b{display:block;font-size:15px}
+.contact a{display:inline-block;margin-top:8px;background:var(--accent);color:#fff;text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:700}
+.foot{font-size:11px;color:var(--sub);padding:10px 16px 16px}
+.edit label{font-size:12px;color:var(--sub);display:block;margin-top:8px}
+.badge{background:#fff3cd;color:#7a5a00;font-size:12px;padding:6px 10px;border-radius:8px;margin-bottom:10px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<header><h1>物件ページ作成</h1><span class="tag">試作版</span></header>
+<main>
+<div id="maker" class="grid">
+  <div>
+    <div class="card">
+      <h2>マイソクからページを作る</h2>
+      <div class="step"><div class="num">1</div><div style="flex:1">
+        <label class="drop" id="drop">ここを押してマイソクを選ぶ<br><span style="font-size:12px">PDF か 写真（JPG/PNG）</span>
+          <input type="file" id="file" accept="application/pdf,image/*"></label>
+        <div class="hint" id="fname"></div>
+      </div></div>
+      <div class="step"><div class="num">2</div><div style="flex:1">
+        <button class="primary" id="go">ページを作る</button>
+        <div class="status" id="status"></div><div class="err" id="err"></div>
+      </div></div>
+      <div class="step"><div class="num">3</div><div style="flex:1">
+        <div class="row"><button class="ghost" id="open">ページを開く</button><button class="ghost" id="copy">リンクをコピー</button></div>
+        <div class="row" style="margin-top:8px"><button class="ghost" id="copyshort">短いリンク（写真なし）をコピー</button></div>
+        <div class="hint">リンクを LINE やメールに貼って送る。写真つきは長いので、LINEで切れるときは短いリンクを使う</div>
+      </div></div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <h2>設定（最初の1回だけ）</h2>
+      <input type="password" id="key" placeholder="Gemini APIキー">
+      <div class="hint">この端末に保存されます。キーは長谷部から受け取ってください</div>
+      <div class="row" style="margin-top:10px"><button class="ghost" id="sample">サンプル（錦糸町）で試す</button></div>
+    </div>
+    <div class="card edit hide" id="editor" style="margin-top:12px">
+      <h2>直す（ここを書き換えると右のページも変わる）</h2>
+      <label>おすすめポイント（1行1つ）</label><textarea id="e_points"></textarea>
+      <label>担当者名</label><input type="text" id="e_staff">
+      <label>電話番号</label><input type="text" id="e_phone">
+    </div>
+  </div>
+  <div>
+    <div class="badge" id="checkbox_hint">送る前に「おすすめポイント」がマイソクに書いてあることだけか確かめる</div>
+    <div id="preview"></div>
+  </div>
+</div>
+<div id="viewer" class="hide"></div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs" type="module"></script>
+<script src="sample.js"></script>
+<script type="module">
+import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs";
+
+const $ = id => document.getElementById(id);
+const BANNED = ["最高","絶対","完璧","日当たり良好","日当たりの良い","陽当たり","閑静","人気","お得","掘り出し","格安","破格","理想","快適","充実","魅力","安心","便利","豊か","至近","おすすめ"];
+const MODEL = "gemini-2.5-flash";
+let data = null;        // 現在のページデータ
+let pageCanvas = null;  // マイソクを描いたcanvas（切り抜き用）
+
+// ---------- 表示（作成側・閲覧側で共通） ----------
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function render(d){
+  const photos=(d.photos||[]).slice(0,3);
+  const specs=[["所在地",d.address],["交通",(d.access||[]).join("\n")],["間取り",d.layout],["面積",d.area],["階",d.floor],["築年月",d.built],["構造",d.structure],["総戸数",d.units],["管理費等",d.mgmt_fee],["権利",d.rights],["管理",d.management],["設備",(d.facilities||[]).join("、")],["現況",d.status],["引渡し",d.delivery],["取引態様",d.transaction]].filter(r=>r[1]);
+  return `<div class="phone">
+    <div class="hero"><span class="kind">${esc(d.kind||"物件")}</span><h3>${esc(d.name)}</h3>
+      <div class="price"><div class="l">価格</div><div class="v">${esc(d.price)}</div></div></div>
+    ${photos.length?`<div class="photos">${photos.map(p=>`<img src="${p}" alt="">`).join("")}</div>`:""}
+    <section class="p"><h4>ポイント</h4>${(d.points||[]).map((t,i)=>`<div class="pt"><div class="n">${i+1}</div><div class="t">${esc(t)}</div></div>`).join("")}</section>
+    ${d.floorplan?`<section class="p fp"><h4>間取り</h4><img src="${d.floorplan}" alt="間取り図"></section>`:""}
+    <section class="p"><h4>物件概要</h4><table class="spec">${specs.map(r=>`<tr><th>${esc(r[0])}</th><td>${esc(r[1]).replace(/\n/g,"<br>")}</td></tr>`).join("")}</table></section>
+    ${d.map?`<section class="p fp"><h4>地図</h4><img src="${d.map}" alt="地図"></section>`:""}
+    <section class="p"><div class="contact"><b>${esc(d.company||"")}</b>${esc(d.license||"")}<br>担当：${esc(d.staff||"")}
+      ${d.phone?`<br><a href="tel:${esc(d.phone)}">電話で問い合わせる ${esc(d.phone)}</a>`:""}</div></section>
+    <div class="foot">図面と現況が異なる場合は現況を優先します。掲載内容はマイソクの記載に基づきます。</div>
+  </div>`;
+}
+
+// ---------- リンク（データをURLに入れる。試作版） ----------
+function encode(d,short){
+  const slim={...d};
+  // 写真は1枚だけ・間取り図は残す・地図は外す（URLを短くするため）。short は画像なし
+  slim.photos=short?[]:(d.photos||[]).slice(0,1); delete slim.map; if(short) delete slim.floorplan;
+  const json=JSON.stringify(slim);
+  const b=new TextEncoder().encode(json);
+  let s=""; b.forEach(x=>s+=String.fromCharCode(x));
+  return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+}
+function decode(h){
+  h=h.replace(/-/g,"+").replace(/_/g,"/"); const s=atob(h);
+  const b=new Uint8Array(s.length); for(let i=0;i<s.length;i++)b[i]=s.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(b));
+}
+function shareUrl(short){return location.origin+location.pathname+"#p="+encode(data,short)}
+
+// ---------- 閲覧モード ----------
+if(location.hash.startsWith("#p=")){
+  try{ data=decode(location.hash.slice(3)); $("maker").classList.add("hide"); $("viewer").classList.remove("hide"); $("viewer").innerHTML=render(data); document.title=data.name||"物件ページ"; document.querySelector("header").classList.add("hide"); }
+  catch(e){ $("viewer").innerHTML="<p>リンクが壊れています。送った人に聞いてください。</p>"; $("maker").classList.add("hide"); $("viewer").classList.remove("hide"); }
+}
+
+// ---------- 作成側 ----------
+function show(){
+  $("preview").innerHTML=render(data);
+  $("editor").classList.remove("hide");
+  $("e_points").value=(data.points||[]).join("\n"); $("e_staff").value=data.staff||""; $("e_phone").value=data.phone||"";
+  const hit=(data.points||[]).join(" ").match(new RegExp(BANNED.join("|"),"g"));
+  $("checkbox_hint").textContent = hit ? `注意：「${[...new Set(hit)].join("」「")}」はマイソクに根拠がない言葉です。消してください` : "送る前に「おすすめポイント」がマイソクに書いてあることだけか確かめる";
+}
+for(const id of ["e_points","e_staff","e_phone"]) $(id).addEventListener("input",()=>{ if(!data)return; data.points=$("e_points").value.split("\n").map(s=>s.trim()).filter(Boolean); data.staff=$("e_staff").value; data.phone=$("e_phone").value; $("preview").innerHTML=render(data); });
+$("sample").onclick=()=>{ data=JSON.parse(JSON.stringify(window.SAMPLE)); show(); $("status").textContent="サンプルを表示しました"; };
+$("copy").onclick=async()=>{ if(!data){$("err").textContent="先にページを作ってください";return;} const u=shareUrl(); try{await navigator.clipboard.writeText(u);$("status").textContent=`リンクをコピーしました（${Math.round(u.length/1024)}KB）`;}catch(e){prompt("このリンクをコピーしてください",u);} };
+$("copyshort").onclick=async()=>{ if(!data){$("err").textContent="先にページを作ってください";return;} const u=shareUrl(true); try{await navigator.clipboard.writeText(u);$("status").textContent=`短いリンクをコピーしました（${Math.round(u.length/1024)}KB）`;}catch(e){prompt("このリンクをコピーしてください",u);} };
+$("open").onclick=()=>{ if(!data)return; window.open(shareUrl(),"_blank"); };
+$("key").value=localStorage.getItem("gemini_key")||""; $("key").addEventListener("change",()=>localStorage.setItem("gemini_key",$("key").value.trim()));
+let file=null;
+$("file").addEventListener("change",e=>{file=e.target.files[0]; $("fname").textContent=file?`選択中：${file.name}`:"";});
+["dragover","dragleave","drop"].forEach(ev=>$("drop").addEventListener(ev,e=>{e.preventDefault(); $("drop").classList.toggle("on",ev==="dragover"); if(ev==="drop"){file=e.dataTransfer.files[0]; $("fname").textContent=`選択中：${file.name}`;}}));
+
+async function fileToCanvas(f){
+  const c=document.createElement("canvas"); const ctx=c.getContext("2d");
+  if(f.type==="application/pdf"){
+    const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise; const page=await pdf.getPage(1);
+    const vp=page.getViewport({scale:1}); const scale=Math.min(2,1600/Math.max(vp.width,vp.height)); const v=page.getViewport({scale});
+    c.width=v.width; c.height=v.height; await page.render({canvasContext:ctx,viewport:v}).promise;
+  }else{
+    const img=await new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=URL.createObjectURL(f);});
+    const scale=Math.min(1,1600/Math.max(img.width,img.height)); c.width=img.width*scale; c.height=img.height*scale; ctx.drawImage(img,0,0,c.width,c.height);
+  }
+  return c;
+}
+function crop(box,maxW){ // box=[ymin,xmin,ymax,xmax] 0-1000
+  if(!box||box.length!==4||!pageCanvas)return null;
+  const [y0,x0,y1,x1]=box.map(v=>Math.max(0,Math.min(1000,v))/1000);
+  const sx=x0*pageCanvas.width, sy=y0*pageCanvas.height, sw=(x1-x0)*pageCanvas.width, sh=(y1-y0)*pageCanvas.height;
+  if(sw<20||sh<20)return null;
+  const s=Math.min(1,maxW/sw); const c=document.createElement("canvas"); c.width=Math.round(sw*s); c.height=Math.round(sh*s);
+  c.getContext("2d").drawImage(pageCanvas,sx,sy,sw,sh,0,0,c.width,c.height); return c.toDataURL("image/jpeg",0.7);
+}
+const SCHEMA={type:"object",properties:{
+  name:{type:"string"},kind:{type:"string"},price:{type:"string"},address:{type:"string"},access:{type:"array",items:{type:"string"}},
+  layout:{type:"string"},area:{type:"string"},floor:{type:"string"},built:{type:"string"},structure:{type:"string"},units:{type:"string"},
+  mgmt_fee:{type:"string"},rights:{type:"string"},management:{type:"string"},facilities:{type:"array",items:{type:"string"}},
+  status:{type:"string"},delivery:{type:"string"},transaction:{type:"string"},company:{type:"string"},license:{type:"string"},phone:{type:"string"},staff:{type:"string"},
+  points:{type:"array",items:{type:"string"}},
+  photo_boxes:{type:"array",items:{type:"array",items:{type:"integer"}}},
+  floorplan_box:{type:"array",items:{type:"integer"}},
+  map_box:{type:"array",items:{type:"integer"}}
+},required:["name","price","points"]};
+const PROMPT=`これは不動産のマイソク（物件概要の図面）です。書かれている内容だけを読み取り、JSONで返してください。
+- 書かれていない項目は空文字にする。推測しない。数字と単位は原文どおり（例：3900万円、34.12㎡）。
+- points：マイソクに書かれている事実だけを言い換えた短い文を3つ。評価の言葉（最高・絶対・日当たり良好・閑静・人気・便利・安心・快適・充実 など）は使わない。
+- photo_boxes：建物や室内の写真の位置を、写真ごとに [ymin,xmin,ymax,xmax]（0〜1000）で最大3つ。地図と間取り図は含めない。
+- floorplan_box：間取り図の位置。map_box：地図の位置。無ければ空配列。`;
+async function callGemini(key,jpegDataUrl){
+  const body={contents:[{parts:[{text:PROMPT},{inline_data:{mime_type:"image/jpeg",data:jpegDataUrl.split(",")[1]}}]}],
+    generationConfig:{responseMimeType:"application/json",responseSchema:SCHEMA,temperature:0.1}};
+  const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok){throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0,300)}`);}
+  const j=await r.json(); const t=j.candidates?.[0]?.content?.parts?.map(p=>p.text).join("")||"";
+  return JSON.parse(t);
+}
+$("go").onclick=async()=>{
+  $("err").textContent="";
+  const key=$("key").value.trim(); if(!file){$("err").textContent="マイソクを選んでください";return;} if(!key){$("err").textContent="設定にGemini APIキーを入れてください（サンプルで試すならキーは不要）";return;}
+  try{
+    $("status").textContent="マイソクを読み込んでいます…"; pageCanvas=await fileToCanvas(file);
+    const jpeg=pageCanvas.toDataURL("image/jpeg",0.85);
+    $("status").textContent="AIが内容を読み取っています（30秒ほど）…";
+    const out=await callGemini(key,jpeg);
+    out.photos=(out.photo_boxes||[]).map(b=>crop(b,640)).filter(Boolean);
+    out.floorplan=crop(out.floorplan_box,480); out.map=crop(out.map_box,640);
+    out.points=(out.points||[]).map(p=>BANNED.reduce((s,w)=>s.replace(new RegExp(w,"g"),""),p)).map(s=>s.trim()).filter(Boolean);
+    data=out; show(); $("status").textContent="できました。右のページを確認して、リンクをコピーしてください";
+  }catch(e){ $("status").textContent=""; $("err").textContent="うまくいきませんでした。もう一度押すか、長谷部に画面の写真を送ってください。\n"+e.message; console.error(e); }
+};
+</script>
+</body>
+</html>
