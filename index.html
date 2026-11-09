@@ -61,6 +61,38 @@ table.spec td{padding:7px 6px;border-bottom:1px solid var(--line)}
 .edit label{font-size:12px;color:var(--sub);display:block;margin-top:8px}
 .badge{background:#fff3cd;color:#7a5a00;font-size:12px;padding:6px 10px;border-radius:8px;margin-bottom:10px}
 .hide{display:none}
+.check{font-size:13px;line-height:1.6}
+.check table{width:100%;border-collapse:collapse;margin-top:6px}
+.check th,.check td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:left;vertical-align:top}
+.check .bad{color:var(--warn);font-weight:700}
+.toolbar{max-width:297mm;margin:0 auto 10px;display:flex;gap:8px;align-items:center}
+.toolbar .note{font-size:12px;color:var(--sub)}
+.a4{width:297mm;height:210mm;background:#fff;margin:0 auto;padding:7mm;display:flex;flex-direction:column;gap:3mm;font-family:"Hiragino Sans","Noto Sans JP",sans-serif;color:#000;box-sizing:border-box;overflow:hidden}
+.a4 .main{flex:1;border:.6mm solid #000;padding:4mm;display:grid;grid-template-columns:118mm 66mm 1fr;grid-template-rows:auto 1fr;gap:3mm;min-height:0}
+.a4 .ttl{grid-column:1/3}
+.a4 .ttl h1{font-size:25pt;font-weight:500;margin:0;text-align:center;letter-spacing:.06em}
+.a4 .ttl p{margin:1mm 0 0;font-size:13pt;text-align:center}
+.a4 .head td,.a4 .spec td,.a4 .spec th,.a4 .head th{border:.25mm solid #000;padding:.7mm 1.5mm;font-size:9pt;font-weight:400;text-align:center}
+.a4 table{width:100%;border-collapse:collapse}
+.a4 .head td{font-size:12pt}
+.a4 .head th,.a4 .spec th{width:21mm;background:#fff}
+.a4 .left{display:grid;grid-template-columns:1.1fr 1fr;grid-template-rows:1fr 1fr 1.25fr;gap:1.5mm;min-height:0}
+.a4 .left .ph{min-height:0;overflow:hidden;background:#eee}
+.a4 .left img{width:100%;height:100%;object-fit:cover;display:block}
+.a4 .left .p0{grid-row:1/3}.a4 .left .map{grid-column:1/3}
+.a4 .left .map img{object-fit:contain;background:#fff}
+.a4 .plan{min-height:0;display:flex;align-items:center;justify-content:center}
+.a4 .plan img{max-width:100%;max-height:100%}
+.a4 .side{grid-column:3;grid-row:2;min-height:0}
+.a4 .head{grid-column:3;grid-row:1}
+.a4 .band{border:.6mm solid #000;padding:2.5mm 5mm;display:grid;grid-template-columns:1.1fr 1.5fr 42mm;gap:4mm;align-items:center}
+.a4 .band .co{text-align:center;font-size:21pt;font-weight:700;line-height:1.15}
+.a4 .band .co small{display:block;font-size:11pt;font-weight:700}
+.a4 .band .ad{font-size:10.5pt;font-weight:700;line-height:1.5}
+.a4 .band table td{border:.25mm solid #000;font-size:9.5pt;font-weight:700;text-align:center;padding:1mm}
+.a4 .fine{font-size:7pt;text-align:right;margin:0}
+.a4 .empty{color:#b3261e}
+@media print{@page{size:A4 landscape;margin:0}html,body{background:#fff;margin:0}main{padding:0;max-width:none}.toolbar,header{display:none!important}}
 </style>
 </head>
 <body>
@@ -80,6 +112,7 @@ table.spec td{padding:7px 6px;border-bottom:1px solid var(--line)}
         <div class="status" id="status"></div><div class="err" id="err"></div>
       </div></div>
       <div class="step"><div class="num">3</div><div style="flex:1">
+        <div class="row" style="margin-bottom:8px"><button class="primary" id="openmyso">RISE VISTA名義のマイソクを開く</button></div>
         <div class="row"><button class="ghost" id="open">ページを開く</button><button class="ghost" id="copy">リンクをコピー</button></div>
         <div class="row" style="margin-top:8px"><button class="ghost" id="copyshort">短いリンク（写真なし）をコピー</button></div>
         <div class="hint">リンクを LINE やメールに貼って送る。写真つきは長いので、LINEで切れるときは短いリンクを使う</div>
@@ -91,9 +124,11 @@ table.spec td{padding:7px 6px;border-bottom:1px solid var(--line)}
       <div class="hint">この端末に保存されます。キーは長谷部から受け取ってください</div>
       <div class="row" style="margin-top:10px"><button class="ghost" id="sample">サンプル（錦糸町）で試す</button></div>
     </div>
+    <div class="card check hide" id="verify" style="margin-top:12px"></div>
     <div class="card edit hide" id="editor" style="margin-top:12px">
       <h2>直す（書き換えると見本も変わる）</h2>
       <label>おすすめポイント（1行1つ）</label><textarea id="e_points"></textarea>
+      <label>取引態様（売主・媒介など。自社の立場を入れる）</label><input type="text" id="e_trans">
       <label>担当者名</label><input type="text" id="e_staff">
       <label>電話番号</label><input type="text" id="e_phone">
     </div>
@@ -115,7 +150,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs
 const $ = id => document.getElementById(id);
 const BANNED = ["最高","絶対","完璧","日当たり良好","日当たりの良い","陽当たり","閑静","人気","お得","掘り出し","格安","破格","理想","快適","充実","魅力","安心","便利","豊か","至近","おすすめ"];
 const MODELS = ["gemini-2.5-flash","gemini-flash-latest","gemini-2.0-flash"];
+const RV={company:"株式会社RISE VISTA",license:"東京都知事（1）第112783号",zip:"〒150-0002",addr:"東京都渋谷区渋谷1-1-8 青山ダイヤモンドビル7階",phone:"03-6427-9525",fax:"03-6427-9526"};
 let data = null;        // 現在のページデータ
+let pageImages = []; // PDFに埋め込まれた画像の正確な位置（0-1000）
 let pageCanvas = null;  // マイソクを描いたcanvas（切り抜き用）
 
 // ---------- 表示（作成側・閲覧側で共通） ----------
@@ -138,6 +175,25 @@ function render(d){
   </div>`;
 }
 
+function renderMyso(d){
+  const v=x=>esc(x||"");
+  const p=(d.photos||[]).map(safeImg).filter(Boolean);
+  const rows=[["構　造",d.structure],["所在階",d.floor],["面　積",d.area],["間取り",d.layout],["総戸数",d.units],["築年月",d.built],["管理費等",d.mgmt_fee],["管理形態",d.management],["設　備",(d.facilities||[]).join("、")],["現　況",d.status],["引渡し",d.delivery]];
+  const ph=(i,c)=>`<div class="ph ${c}">${p[i]?`<img src="${p[i]}" alt="">`:""}</div>`;
+  return `<div class="a4"><div class="main">
+    <div class="ttl"><h1>${v(d.name)}</h1>${(d.access||[]).map(a=>`<p>${v(a)}</p>`).join("")}</div>
+    <div class="head"><table><tr><th>概　要</th><td>${v(d.kind)}</td></tr><tr><th>価　格</th><td>${v(d.price)}</td></tr><tr><th>所　在</th><td>${v(d.address)}</td></tr><tr><th>権　利</th><td>${v(d.rights)}</td></tr></table></div>
+    <div class="left">${ph(0,"p0")}${ph(1,"p1")}${ph(2,"p2")}<div class="ph map">${safeImg(d.map)?`<img src="${safeImg(d.map)}" alt="">`:""}</div></div>
+    <div class="plan">${safeImg(d.floorplan)?`<img src="${safeImg(d.floorplan)}" alt="">`:""}</div>
+    <div class="side"><table class="spec">${rows.map(r=>`<tr><th>${r[0]}</th><td>${v(r[1])}</td></tr>`).join("")}</table></div>
+  </div>
+  <p class="fine">※図面と現況が異なる場合は現況優先となります。</p>
+  <div class="band"><div class="co">${RV.company}<small>${RV.license}</small></div>
+    <div class="ad">${RV.zip}<br>${RV.addr}<br>TEL ${RV.phone}　FAX ${RV.fax}</div>
+    <table><tr><td>取引態様</td><td class="${d.transaction?"":"empty"}">${d.transaction?v(d.transaction):"未入力"}</td></tr><tr><td>担　当</td><td>${v(d.staff)}</td></tr></table></div>
+  </div>`;
+}
+
 // ---------- リンク（データをURLに入れる。試作版） ----------
 function encode(d,short){
   const slim={...d};
@@ -153,6 +209,8 @@ function decode(h){
   const b=new Uint8Array(s.length); for(let i=0;i<s.length;i++)b[i]=s.charCodeAt(i);
   return JSON.parse(new TextDecoder().decode(b));
 }
+function encodeFull(d){const b=new TextEncoder().encode(JSON.stringify(d));let s="";b.forEach(x=>s+=String.fromCharCode(x));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")}
+function mysoUrl(){return location.origin+location.pathname+"#m="+encodeFull(data)}
 function shareUrl(short){return location.origin+location.pathname+"#p="+encode(data,short)}
 
 // ---------- 閲覧モード ----------
@@ -161,19 +219,27 @@ if(location.hash.startsWith("#p=")){
   catch(e){ $("viewer").innerHTML="<p>リンクが壊れています。送った人に聞いてください。</p>"; $("maker").classList.add("hide"); $("viewer").classList.remove("hide"); }
 }
 
+if(location.hash.startsWith("#m=")){
+  try{ data=decode(location.hash.slice(3)); $("maker").classList.add("hide"); $("viewer").classList.remove("hide"); document.querySelector("header").classList.add("hide"); document.title=(data.name||"物件")+"_マイソク";
+    $("viewer").innerHTML=`<div class="toolbar"><button class="primary" style="width:auto" id="pr">PDFで保存・印刷</button><span class="note">印刷画面で「PDFに保存」を選ぶ。用紙はA4横、余白なし</span></div>`+renderMyso(data);
+    $("pr").onclick=()=>window.print(); }
+  catch(e){ $("maker").classList.add("hide"); $("viewer").classList.remove("hide"); $("viewer").innerHTML="<p>リンクが壊れています。作り直してください。</p>"; }
+}
+
 // ---------- 作成側 ----------
 function show(){
   $("preview").innerHTML=render(data);
   $("editor").classList.remove("hide");
-  $("e_points").value=(data.points||[]).join("\n"); $("e_staff").value=data.staff||""; $("e_phone").value=data.phone||"";
+  $("e_points").value=(data.points||[]).join("\n"); $("e_trans").value=data.transaction||""; $("e_staff").value=data.staff||""; $("e_phone").value=data.phone||"";
   hint();
 }
 function hint(){
   const hit=(data.points||[]).join(" ").match(new RegExp(BANNED.join("|"),"g"));
+  if(!data.transaction&&!hit){ $("checkbox_hint").textContent="注意：取引態様が未入力です。売主か媒介かを「直す」の欄に入れてください"; $("checkbox_hint").style.background="#f8d7da"; $("checkbox_hint").style.color="#842029"; return; }
   $("checkbox_hint").textContent = hit ? `注意：「${[...new Set(hit)].join("」「")}」はマイソクに根拠がない言葉です。消してください` : "送る前に「おすすめポイント」がマイソクに書いてあることだけか確かめる";
   $("checkbox_hint").style.background = hit ? "#f8d7da" : "#fff3cd"; $("checkbox_hint").style.color = hit ? "#842029" : "#7a5a00";
 }
-for(const id of ["e_points","e_staff","e_phone"]) $(id).addEventListener("input",()=>{ if(!data)return; data.points=$("e_points").value.split("\n").map(s=>s.trim()).filter(Boolean); data.staff=$("e_staff").value; data.phone=$("e_phone").value; $("preview").innerHTML=render(data); hint(); });
+for(const id of ["e_points","e_trans","e_staff","e_phone"]) $(id).addEventListener("input",()=>{ if(!data)return; data.points=$("e_points").value.split("\n").map(s=>s.trim()).filter(Boolean); data.transaction=$("e_trans").value.trim(); data.staff=$("e_staff").value; data.phone=$("e_phone").value; $("preview").innerHTML=render(data); hint(); });
 function reveal(win){ // できたページを別タブで表示
   const u=shareUrl();
   if(win){ win.location.href=u; return true; }
@@ -181,6 +247,7 @@ function reveal(win){ // できたページを別タブで表示
 }
 $("sample").onclick=()=>{ const win=window.open("about:blank","_blank"); data=JSON.parse(JSON.stringify(window.SAMPLE)); show(); $("status").textContent=reveal(win)?"サンプルのページを別のタブで開きました":"サンプルを表示しました（別のタブは「ページを開く」で開けます）"; };
 $("copy").onclick=async()=>{ if(!data){$("err").textContent="先にページを作ってください";return;} const u=shareUrl(); try{await navigator.clipboard.writeText(u);$("status").textContent=`リンクをコピーしました（${Math.round(u.length/1024)}KB）`;}catch(e){prompt("このリンクをコピーしてください",u);} };
+$("openmyso").onclick=()=>{ if(!data){$("err").textContent="先にページを作ってください";return;} window.open(mysoUrl(),"_blank"); };
 $("copyshort").onclick=async()=>{ if(!data){$("err").textContent="先にページを作ってください";return;} const u=shareUrl(true); try{await navigator.clipboard.writeText(u);$("status").textContent=`短いリンクをコピーしました（${Math.round(u.length/1024)}KB）`;}catch(e){prompt("このリンクをコピーしてください",u);} };
 $("open").onclick=()=>{ if(!data)return; window.open(shareUrl(),"_blank"); };
 $("key").value=localStorage.getItem("gemini_key")||""; $("key").addEventListener("change",()=>localStorage.setItem("gemini_key",$("key").value.trim()));
@@ -188,12 +255,50 @@ let file=null;
 $("file").addEventListener("change",e=>{file=e.target.files[0]; $("fname").textContent=file?`選択中：${file.name}`:"";});
 ["dragover","dragleave","drop"].forEach(ev=>$("drop").addEventListener(ev,e=>{e.preventDefault(); $("drop").classList.toggle("on",ev==="dragover"); if(ev==="drop"){file=e.dataTransfer.files[0]; $("fname").textContent=`選択中：${file.name}`;}}));
 
+async function embeddedRects(page,v,c){
+  const O=pdfjsLib.OPS, list=await page.getOperatorList(), mul=(a,b)=>[a[0]*b[0]+a[2]*b[1],a[1]*b[0]+a[3]*b[1],a[0]*b[2]+a[2]*b[3],a[1]*b[2]+a[3]*b[3],a[0]*b[4]+a[2]*b[5]+a[4],a[1]*b[4]+a[3]*b[5]+a[5]];
+  let m=v.transform.slice(); const st=[], out=[];
+  list.fnArray.forEach((fn,i)=>{
+    if(fn===O.save) st.push(m.slice());
+    else if(fn===O.restore) m=st.pop()||m;
+    else if(fn===O.transform) m=mul(m,list.argsArray[i]);
+    else if(fn===O.paintImageXObject||fn===O.paintInlineImageXObject||fn===O.paintJpegXObject){
+      const xs=[m[4],m[4]+m[0],m[4]+m[2],m[4]+m[0]+m[2]], ys=[m[5],m[5]+m[1],m[5]+m[3],m[5]+m[1]+m[3]];
+      const r=[Math.min(...ys)/c.height*1000,Math.min(...xs)/c.width*1000,Math.max(...ys)/c.height*1000,Math.max(...xs)/c.width*1000].map(Math.round);
+      const a=(r[2]-r[0])*(r[3]-r[1])/1e6;
+      if(a>0.015&&a<0.8) out.push(r);
+    }
+  });
+  return out;
+}
+function overlap(r,b){ // rのうちbに重なる割合
+  if(!b||b.length!==4)return 0;
+  const h=Math.min(r[2],b[2])-Math.max(r[0],b[0]), w=Math.min(r[3],b[3])-Math.max(r[1],b[1]);
+  return (h>0&&w>0)?(h*w)/((r[2]-r[0])*(r[3]-r[1])):0;
+}
+function assignImages(out){
+  const flat=b=>Array.isArray(b&&b[0])?b[0]:b, fp=flat(out.floorplan_box), mp=flat(out.map_box), ph=(out.photo_boxes||[]).map(flat);
+  if(pageImages.length){ // 位置はPDFから、種類の判定だけAIの結果を使う
+    const P=[]; let F=null,M=null;
+    for(const r of pageImages){
+      const sf=overlap(r,fp), sm=overlap(r,mp), sp=Math.max(0,...ph.map(b=>overlap(r,b)));
+      if(sf>=sm&&sf>=sp&&sf>0.3){ if(!F||sf>overlap(F,fp))F=r; }
+      else if(sm>=sp&&sm>0.3){ if(!M||sm>overlap(M,mp))M=r; }
+      else if(sp>0.3) P.push(r);
+    }
+    P.sort((a,b)=>(b[2]-b[0])*(b[3]-b[1])-(a[2]-a[0])*(a[3]-a[1]));
+    return {photos:P.slice(0,3).map(b=>crop(b,720)).filter(Boolean),floorplan:crop(F||fp,640),map:crop(M||mp,720)};
+  }
+  return {photos:ph.map(b=>crop(b,720)).filter(Boolean),floorplan:crop(fp,640),map:crop(mp,720)};
+}
 async function fileToCanvas(f){
+  pageImages=[];
   const c=document.createElement("canvas"); const ctx=c.getContext("2d");
   if(f.type==="application/pdf"){
     const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise; const page=await pdf.getPage(1);
     const vp=page.getViewport({scale:1}); const scale=Math.min(2,1600/Math.max(vp.width,vp.height)); const v=page.getViewport({scale});
     c.width=v.width; c.height=v.height; await page.render({canvasContext:ctx,viewport:v}).promise;
+    pageImages=await embeddedRects(page,v,c);
   }else{
     const img=await new Promise((res,rej)=>{const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=URL.createObjectURL(f);});
     const scale=Math.min(1,1600/Math.max(img.width,img.height)); c.width=img.width*scale; c.height=img.height*scale; ctx.drawImage(img,0,0,c.width,c.height);
@@ -220,8 +325,9 @@ const SCHEMA={type:"object",properties:{
 },required:["name","price","points"]};
 const PROMPT=`これは不動産のマイソク（物件概要の図面）です。書かれている内容だけを読み取り、JSONで返してください。
 - 書かれていない項目は空文字にする。推測しない。数字と単位は原文どおり（例：3900万円、34.12㎡）。
+- company・license・phone・staff・transaction は、原稿を作った不動産会社の情報なので空文字にする。別の会社名で出し直すため。
 - points：マイソクに書かれている事実だけを言い換えた短い文を3つ。評価の言葉（最高・絶対・日当たり良好・閑静・人気・便利・安心・快適・充実 など）は使わない。
-- photo_boxes：建物や室内の写真の位置を、写真ごとに [ymin,xmin,ymax,xmax]（0〜1000）で最大3つ。地図と間取り図は含めない。
+- photo_boxes：建物や室内の写真の位置を、写真ごとに [ymin,xmin,ymax,xmax]（0〜1000）で最大3つ。地図、間取り図、会社名の帯は含めない。
 - floorplan_box：間取り図の位置。map_box：地図の位置。無ければ空配列。`;
 async function callGemini(key,jpegDataUrl){
   const body={contents:[{parts:[{text:PROMPT},{inline_data:{mime_type:"image/jpeg",data:jpegDataUrl.split(",")[1]}}]}],
@@ -236,6 +342,33 @@ async function callGemini(key,jpegDataUrl){
   }
   throw new Error(last);
 }
+function verifyLinks(d){const q=encodeURIComponent((d.name||"")+" "+(d.address||"")); return `<a href="https://www.google.com/search?q=${q}" target="_blank" rel="noopener">Googleでこの物件を検索</a>`}
+function verifyBox(html){ $("verify").classList.remove("hide"); $("verify").innerHTML=`<h2>公開情報との照合</h2>${html}<p class="hint">${verifyLinks(data)}　AIの照合も間違えることがあります。最後は人が確かめてください</p>`; }
+async function verifyWeb(key,d){
+  const facts={物件名:d.name,所在地:d.address,交通:d.access,総戸数:d.units,築年月:d.built,構造:d.structure,面積:d.area,間取り:d.layout};
+  const body={contents:[{parts:[{text:"次の不動産の情報を、Google検索で見つかる公開情報（マンションの公式サイト、物件情報サイト）と照合してください。特定の部屋の価格は照合しません。\n"+JSON.stringify(facts,null,0)+"\n結果はJSON配列だけを返す。形式は [{\"item\":\"項目\",\"myso\":\"マイソクの値\",\"web\":\"公開情報の値\",\"same\":true/false}]。公開情報が見つからない項目は入れない。"}]}],tools:[{google_search:{}}]};
+  for(const m of MODELS){
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(key)}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    if(r.status===404)continue;
+    if(!r.ok)throw new Error("Gemini "+r.status);
+    const c=(await r.json()).candidates?.[0];
+    const t=c?.content?.parts?.map(p=>p.text||"").join("")||"";
+    const a=t.match(/\[[\s\S]*\]/);
+    const src=(c?.groundingMetadata?.groundingChunks||[]).map(x=>x.web).filter(w=>w&&/^https:/.test(w.uri)).slice(0,5);
+    return {rows:a?JSON.parse(a[0]):[],src};
+  }
+  throw new Error("照合に使えるモデルがありません");
+}
+async function runVerify(key,d){
+  verifyBox("<p>公開情報と照合しています…</p>");
+  try{
+    const {rows,src}=await verifyWeb(key,d);
+    const ng=rows.filter(r=>r.same===false).length;
+    const tb=rows.length?`<table><tr><th>項目</th><th>マイソク</th><th>公開情報</th></tr>${rows.map(r=>`<tr class="${r.same===false?"bad":""}"><td>${esc(r.item)}</td><td>${esc(r.myso)}</td><td>${esc(r.web)}</td></tr>`).join("")}</table>`:"<p>照合できる公開情報が見つかりませんでした。</p>";
+    const sl=src.length?"<p class=\"hint\">出典："+src.map(w=>`<a href="${esc(w.uri)}" target="_blank" rel="noopener">${esc(w.title||"リンク")}</a>`).join("　")+"</p>":"";
+    verifyBox((ng?`<p class="bad">${ng}件、マイソクと公開情報が違います。赤い行を確かめてください</p>`:"")+tb+sl);
+  }catch(e){ verifyBox("<p>自動の照合はできませんでした。下のリンクから確かめてください。</p>"); console.error(e); }
+}
 $("go").onclick=async()=>{
   $("err").textContent="";
   const key=$("key").value.trim(); if(!file){$("err").textContent="マイソクを選んでください";return;} if(!key){$("err").textContent="設定にGemini APIキーを入れてください（サンプルで試すならキーは不要）";return;}
@@ -246,10 +379,10 @@ $("go").onclick=async()=>{
     const jpeg=pageCanvas.toDataURL("image/jpeg",0.85);
     $("status").textContent="AIが内容を読み取っています（30秒ほど）…";
     const out=await callGemini(key,jpeg);
-    out.photos=(out.photo_boxes||[]).map(b=>crop(b,640)).filter(Boolean);
-    out.floorplan=crop(out.floorplan_box,480); out.map=crop(out.map_box,640);
+    Object.assign(out,{company:RV.company,license:RV.license,phone:RV.phone,staff:"",transaction:""});
+    Object.assign(out,assignImages(out));
     out.points=(out.points||[]).map(s=>String(s).trim()).filter(Boolean).slice(0,3);
-    data=out; show(); $("status").textContent=reveal(win)?"できました。別のタブでページを開きました。確認したら、この画面でリンクをコピーしてください":"できました。「ページを開く」で確認して、リンクをコピーしてください";
+    data=out; show(); $("status").textContent=reveal(win)?"できました。別のタブでページを開きました。確認したら、この画面でリンクをコピーしてください":"できました。「ページを開く」で確認して、リンクをコピーしてください"; runVerify(key,data);
   }catch(e){ if(win) win.close(); $("status").textContent=""; $("err").textContent="うまくいきませんでした。もう一度押すか、長谷部に画面の写真を送ってください。\n"+e.message; console.error(e); }
 };
 </script>
